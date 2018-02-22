@@ -11,7 +11,7 @@
 #import "AppDelegate.h"
 
 @interface LLBaseNavigationController ()<UIGestureRecognizerDelegate>{
-    // 记录当前耗时 0.25秒类滑动50点的距离判定为还原成功
+    // 记录当前耗时 0.25秒类滑动50点的距离判定为pop成功
     CFAbsoluteTime start;
 }
 
