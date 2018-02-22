@@ -10,7 +10,10 @@
 #import "LLNavControllerDelegate.h"
 #import "AppDelegate.h"
 
-@interface LLBaseNavigationController ()<UIGestureRecognizerDelegate>
+@interface LLBaseNavigationController ()<UIGestureRecognizerDelegate>{
+    // 记录当前耗时 0.25秒类滑动50点的距离判定为还原成功
+    CFAbsoluteTime start;
+}
 
 @property (nonatomic, strong) NSMutableArray<UIImage *> *childVCImages; //保存截屏的数组
 @property (nonatomic, strong) LLNavControllerDelegate   *transitionDelegate;
@@ -25,8 +28,8 @@
     self.interactivePopGestureRecognizer.enabled = NO;      //屏蔽系统的返回手势
     
     self.transitionDelegate = [[LLNavControllerDelegate alloc] init];
-    self.transitionDelegate.presentTransition = @"LLPresentAnimation"; //自定义push动画
-    self.transitionDelegate.dismissTransition = @"LLDismissAnimation"; //自定义pop动画
+//    self.transitionDelegate.presentTransition = @"LLPresentAnimation"; //自定义push动画
+//    self.transitionDelegate.dismissTransition = @"LLDismissAnimation"; //自定义pop动画
     self.delegate = self.transitionDelegate;
 }
 
@@ -74,12 +77,15 @@
     CGFloat tx = [recognizer translationInView:self.view].x;
     //在x方向上移动的距离除以屏幕的宽度
     CGFloat width_scale;
+
+    
     if (recognizer.state == UIGestureRecognizerStateBegan) {
         //添加截图到最后面
         width_scale = 0;
         [AppDelegate shareDelegete].screenShotView.hidden = NO;
         [AppDelegate shareDelegete].screenShotView.maskView.alpha = 0.5;
         [AppDelegate shareDelegete].screenShotView.imageView.image = [self.childVCImages lastObject];
+        start = CFAbsoluteTimeGetCurrent();
     }
     else if (recognizer.state == UIGestureRecognizerStateChanged){
         //移动view
@@ -92,7 +98,12 @@
     else if (recognizer.state == UIGestureRecognizerStateEnded) {
         //决定pop还是还原
         CGFloat x = [recognizer translationInView:self.view].x;
-        if (x >= 100) {
+        
+        CFAbsoluteTime end = CFAbsoluteTimeGetCurrent();
+        NSLog(@"滑动时间：%f 滑动距离：%.0f", end - start, x);
+        
+        
+        if (x >= 100 || (x >= 50  &&  end-start < 0.25) ) {
             [UIView animateWithDuration:0.25 animations:^{
                 [AppDelegate shareDelegete].screenShotView.maskView.alpha = 0;
                 self.view.transform = CGAffineTransformMakeTranslation(self.view.bounds.size.width, 0);
@@ -139,22 +150,32 @@
     if (self.viewControllers.count <= 1)    return NO;
     if ([gestureRecognizer isKindOfClass:[UIPanGestureRecognizer class]]) {
         CGPoint point = [touch locationInView:gestureRecognizer.view];
-        if (point.x < 80.0) {//设置手势触发区
+        if (point.x < BackGesturesLength) {//设置手势触发区
             return YES;
         }
     }
     return NO;
 }
 
-//是否与其他手势共存，一般使用默认值(默认返回NO：不与任何手势共存)
-- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
-    if (self.recognizeSimultaneouslyEnable) {
-        if ([otherGestureRecognizer isKindOfClass:NSClassFromString(@"UIScrollViewPanGestureRecognizer")] || [otherGestureRecognizer isKindOfClass:NSClassFromString(@"UIPanGestureRecognizer")] ) {
-            return YES;
-        }
-    }
-    return NO;
-}
+////是否与其他手势共存，一般使用默认值(默认返回NO：不与任何手势共存)
+//- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer{
+////    if (self.recognizeSimultaneouslyEnable) {
+////        if ([otherGestureRecognizer isKindOfClass:NSClassFromString(@"UIScrollViewPanGestureRecognizer")] || [otherGestureRecognizer isKindOfClass:NSClassFromString(@"UIPanGestureRecognizer")] ) {
+////            return YES;
+////        }
+////    }
+////    return NO;
+//
+//    if ([otherGestureRecognizer isKindOfClass:NSClassFromString(@"UIScrollViewPanGestureRecognizer")] /*|| [otherGestureRecognizer isKindOfClass:NSClassFromString(@"UIPanGestureRecognizer")]*/ ) {
+////        if (self.recognizeSimultaneouslyEnable) {
+////
+////            otherGestureRecognizer = nil;
+////        }
+//        //otherGestureRecognizer = nil;
+//    }
+//    return NO;
+//
+//}
 #pragma mark
 
 @end
